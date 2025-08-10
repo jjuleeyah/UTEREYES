@@ -15,6 +15,7 @@ The demo was recorded using OBS Studio and illustrates the early diagnostic and 
 
 - `code5.html` — main simulation webpage  
 - `scene, monitor` -images used
+- `UTEREYES SIMULATION.mkv` - preview of final simulation
 - `README.md` — this project descpritionn  
 
 ---
@@ -25,5 +26,5 @@ This project is part of the ALX Africa training program, which equips learners w
 
 ---
 
-Feel free to explore the code and media, and reach out if you'd like to discuss the project or collaboration.
+Feel free to explore the code and media, and see the final simulation 
 
