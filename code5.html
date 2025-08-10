@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>UTER-Eyes — Final Simulation</title>
+<style>
+  :root {
+    --bg:#000;
+    --accent:#0ff;
+  }
+  html, body {
+    height:100%;
+    margin:0;
+    background:var(--bg);
+    font-family: Inter, Arial, Helvetica, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .stage {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .scene {
+    position:absolute;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#000;
+    opacity:0;
+    pointer-events:none;
+    z-index:0;
+    transition: opacity 1s ease-in-out;
+  }
+
+  .scene.active {
+    opacity:1;
+    pointer-events:auto;
+    z-index:10;
+  }
+
+  /* Default full screen for media (all except scene 2) */
+  .scene img, .scene video {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    border-radius: 0;
+    background: #000;
+    transition: width 0.5s ease, height 0.5s ease, object-fit 0.5s ease;
+  }
+
+  /* Scene 2 smaller (90% viewport), no cropping */
+  .small-scene-media {
+    width: 90vw !important;
+    height: 90vh !important;
+    object-fit: contain !important;
+  }
+
+  @keyframes zoomPan {
+    0% { transform: scale(1) translateX(0); }
+    50% { transform: scale(1.04) translateX(-8px); }
+    100% { transform: scale(1.06) translateX(8px); }
+  }
+
+  /* Monitor text fixed top right, subtle overlap */
+  .monitor-wrapper {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    pointer-events: none;
+    z-index: 9999;
+    max-width: 320px;
+    width: 25vw;
+    min-width: 220px;
+  }
+
+  .monitor-text {
+    background: rgba(0,0,0,0.55);
+    border: 2px solid var(--accent);
+    border-radius: 6px;
+    color: var(--accent);
+    font-family: monospace;
+    font-size: 1.1rem;
+    padding: 12px 16px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(0,255,255,0.12), 0 0 6px rgba(0,255,255,0.07) inset;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    pointer-events: none;
+  }
+
+  #playAudioBtn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10000;
+    padding: 8px 16px;
+    font-size: 1rem;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  #playAudioBtn:hover {
+    background: #0cc;
+  }
+
+  @media (max-width:900px){
+    .monitor-wrapper {
+      top: 12px;
+      right: 12px;
+      width: 45vw;
+      max-width: none;
+    }
+    .monitor-text {
+      font-size: 1rem;
+      padding: 10px 12px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div id="scene1" class="scene active"><img src="scene1.jpg" alt="Scene 1"></div>
+    <div id="scene2" class="scene"><img src="scene2.jpg" alt="Scene 2"></div>
+    <div id="scene3" class="scene"><video src="scene3.mp4" muted playsinline></video></div>
+    <div id="scene4" class="scene"><video src="scene4.mp4" muted playsinline></video></div>
+    <div id="scene5" class="scene"><img src="scene5.jpg" alt="Scene 5"></div>
+    <div id="scene6" class="scene"><video src="scene6.mp4" muted playsinline></video></div>
+    <div id="scene7" class="scene"><video src="scene7.mp4" muted playsinline></video></div>
+  </div>
+
+  <div class="monitor-wrapper" aria-hidden="true">
+    <div id="monitorText" class="monitor-text">Loading simulation...</div>
+  </div>
+
+  <button id="playAudioBtn" aria-label="Play Background Audio">▶️ Play Audio</button>
+  <audio id="bgAudio" src="via-audio.wav" preload="auto" loop></audio>
+
+<script>
+(function(){
+  const scenes = [
+    { id:'scene1', text: 'With UTER Eyes, decide your future early. With Ease. With Precision', duration:5000 },
+    { id:'scene2', text: 'System check. Getting patient ready', duration:3000 },
+    { id:'scene3', text: 'System ready. Scanning…', duration:5000 },
+    { id:'scene4', text: 'Cervix in normal condition, Ovaries check, tube check', duration:5000 },
+    { id:'scene5', text: 'Status: Healthy.', duration:2000 },
+    { id:'scene6', text: 'Scanning….ALERT: Minor anomaly detected. Monitoring ovarian cyst.', duration:5000 },
+    { id:'scene7', text: 'DANGER: Potential ovarian cancer signs detected.', duration:5000 }
+  ];
+
+  const monitorTextEl = document.getElementById('monitorText');
+  const audioEl = document.getElementById('bgAudio');
+  const playAudioBtn = document.getElementById('playAudioBtn');
+
+  let idx = 0;
+  let timer = null;
+
+  function getSceneEl(id){ return document.getElementById(id); }
+
+  function showScene(index){
+    if(timer) { clearTimeout(timer); timer = null; }
+
+    const scene = scenes[index];
+    const fadeDur = 1000;
+    const el = getSceneEl(scene.id);
+
+    el.style.transition = `opacity ${fadeDur}ms ease-in-out`;
+    el.style.zIndex = 10;
+    el.classList.add('active');
+    el.style.opacity = 1;
+
+    scenes.forEach(s => {
+      if(s.id !== scene.id){
+        const otherEl = getSceneEl(s.id);
+        otherEl.style.transition = `opacity ${fadeDur}ms ease-in-out`;
+        otherEl.style.opacity = 0;
+        otherEl.classList.remove('active');
+        otherEl.style.zIndex = 0;
+        const v = otherEl.querySelector('video');
+        if(v) try{ v.pause(); }catch{}
+      }
+    });
+
+    const media = el.querySelector('video, img');
+    if(media){
+      if(scene.id === 'scene2'){
+        media.classList.add('small-scene-media');
+      } else {
+        media.classList.remove('small-scene-media');
+      }
+
+      if(media.tagName.toLowerCase() === 'video'){
+        media.muted = true;
+        media.loop = false;
+        media.currentTime = 0;
+        media.play().catch(()=>{});
+        media.style.opacity = 1;
+      } else {
+        media.style.animation = `zoomPan ${scene.duration/1000}s ease-in-out forwards`;
+      }
+    }
+
+    monitorTextEl.style.transition = `opacity ${fadeDur/2}ms ease-in-out`;
+    monitorTextEl.style.opacity = 0;
+    setTimeout(() => {
+      monitorTextEl.textContent = scene.text;
+      monitorTextEl.style.opacity = 1;
+    }, fadeDur/2);
+
+    timer = setTimeout(() => {
+      if(media && media.tagName.toLowerCase() === 'video'){
+        try{ media.pause(); }catch{}
+      }
+      showScene((index + 1) % scenes.length);
+    }, scene.duration);
+  }
+
+  playAudioBtn.addEventListener('click', () => {
+    audioEl.play().then(() => {
+      playAudioBtn.style.display = 'none';
+    }).catch(err => {
+      console.error('Audio play failed:', err);
+    });
+  });
+
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      showScene(0);
+      // audio plays only after user clicks the play button
+    }, 250);
+  });
+})();
+</script>
+</body>
+</html>
